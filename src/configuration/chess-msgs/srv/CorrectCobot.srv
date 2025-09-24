@@ -1,0 +1,9 @@
+# Correct a COBOT's joint angles based on aruco marker.
+
+### Request ###
+
+---
+
+### Response ###
+
+bool success

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="two_cobots">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+
+    <xacro:arg name="cobot0_serial_port" default="/dev/ttyCobot0" />
+    <xacro:arg name="cobot0_baud_rate" default="115200" />
+    
+    <xacro:arg name="cobot1_serial_port" default="/dev/ttyCobot1" />
+    <xacro:arg name="cobot1_baud_rate" default="115200" />
+
+    <!-- Import two_cobots urdf file -->
+    <xacro:include filename="$(find ar3_description)/urdf/two_cobots.urdf.xacro" />
+
+    <!-- Import control_xacro -->
+    <xacro:include filename="two_cobots.ros2_control.xacro" />
+
+
+    <xacro:two_cobots_ros2_control
+        name="two_cobots_system"
+        initial_positions_file="$(arg initial_positions_file)"
+
+        cobot0_serial_port="$(arg cobot0_serial_port)"
+        cobot0_baud_rate="$(arg cobot0_baud_rate)"
+
+        cobot1_serial_port="$(arg cobot1_serial_port)"
+        cobot1_baud_rate="$(arg cobot1_baud_rate)"
+    />
+
+</robot>

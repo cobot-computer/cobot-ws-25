@@ -1,0 +1,209 @@
+<?xml version="1.0" ?>
+
+<!-- 
+  This macro creates a single AR3 robot arm at a given location and orientation, relative to a given
+  link. The 'prefix' parameter is used to name the links and joints of the robot. For instance, if
+  prefix = "ar3", we would have links named "ar3_base", "ar3_link_0", "ar3_link_1", etc. and joints
+  named "ar3_base_joint", "ar3_joint_0", "ar3_joint_1", etc.
+ -->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Include helper macros -->
+  <xacro:include filename="$(find ar3_description)/urdf/inc/create_link.xacro" />
+  <xacro:include filename="$(find ar3_description)/urdf/inc/create_joint.xacro" />
+
+  <xacro:macro name="create_ar3" params="
+    prefix
+    origin_xyz
+    origin_rpy
+    parent_link
+  ">
+
+    <!-- Base of AR3 -->
+    <xacro:create_link
+      link_name = "${prefix}_base"
+      mesh_package = "ar3_description"
+      mesh_name = "base"
+    />
+
+    <!-- Arm links -->
+    <xacro:create_link
+      link_name = "${prefix}_link_0"
+      mesh_package = "ar3_description"
+      mesh_name = "link_0"
+    />
+    <xacro:create_link
+      link_name = "${prefix}_link_1"
+      mesh_package = "ar3_description"
+      mesh_name = "link_1"
+    />
+    <xacro:create_link
+      link_name = "${prefix}_link_2"
+      mesh_package = "ar3_description"
+      mesh_name = "link_2"
+    />
+    <xacro:create_link
+      link_name = "${prefix}_link_3"
+      mesh_package = "ar3_description"
+      mesh_name = "link_3"
+    />
+    <xacro:create_link
+      link_name = "${prefix}_link_4"
+      mesh_package = "ar3_description"
+      mesh_name = "link_4"
+    />
+    <xacro:create_link
+      link_name = "${prefix}_link_5"
+      mesh_package = "ar3_description"
+      mesh_name = "link_5"
+    />
+
+    <!-- Arm bias links -->
+    <link name="${prefix}_link_0_bias" />
+    <link name="${prefix}_link_1_bias" />
+    <link name="${prefix}_link_2_bias" />
+    <link name="${prefix}_link_3_bias" />
+    <link name="${prefix}_link_4_bias" />
+    <link name="${prefix}_link_5_bias" />
+
+    <!-- Gripper links -->
+    <xacro:create_link
+      link_name = "${prefix}_link_gripper"
+      mesh_package = "ar3_description"
+      mesh_name = "gripper"
+    />
+    <link name="tof_optical_frame_id" />
+
+    <!-- Phantom link for gripper gearbox -->
+    <link name="${prefix}_link_gripper_phantom" />
+
+    <!-- Aruco link -->
+    <link name="${prefix}_eef_aruco" />
+
+    <!-- Fixed joint between AR3 base and parent link -->
+    <joint name="${prefix}_base_joint" type="fixed">
+      <origin xyz="${origin_xyz}" rpy="${origin_rpy}" />
+      <parent link="${parent_link}" />
+      <child link="${prefix}_base" />
+    </joint>
+
+    <!-- Arm Joints -->
+      <xacro:create_joint
+      name = "${prefix}_joint_0"
+      parent = "${prefix}_base"
+      child = "${prefix}_link_0"
+      bias_parent = "${prefix}_base"
+      bias_child = "${prefix}_link_0_bias"
+      origin = "0 0 0.0872"
+      axis = "0 0 1"
+      min_deg = "-120"
+      max_deg = "160"
+      velocity = "78"
+      effort = "3.5"
+    />
+    <xacro:create_joint
+      name = "${prefix}_joint_1"
+      parent = "${prefix}_link_0"
+      child = "${prefix}_link_1"
+      bias_parent = "${prefix}_link_0_bias"
+      bias_child = "${prefix}_link_1_bias"
+      origin = "0.0642 0 0.0831"
+      axis = "0 1 0"
+      min_deg = "-10"
+      max_deg = "80"
+      velocity = "58"
+      effort = "20"
+    />
+    <xacro:create_joint
+      name = "${prefix}_joint_2"
+      parent = "${prefix}_link_1"
+      child = "${prefix}_link_2"
+      bias_parent = "${prefix}_link_1_bias"
+      bias_child = "${prefix}_link_2_bias"
+      origin = "0 0 0.3050"
+      axis = "0 1 0"
+      min_deg = "-80"
+      max_deg = "140"
+      velocity = "158"
+      effort = "10"
+    />
+    <xacro:create_joint
+      name = "${prefix}_joint_3"
+      parent = "${prefix}_link_2"
+      child = "${prefix}_link_3"
+      bias_parent = "${prefix}_link_2_bias"
+      bias_child = "${prefix}_link_3_bias"
+      origin = "0 0 0.0356"
+      axis = "0 0 1"
+      min_deg = "-95"
+      max_deg = "100"
+      velocity = "238"
+      effort = "3"
+    />
+    <xacro:create_joint
+      name = "${prefix}_joint_4"
+      parent = "${prefix}_link_3"
+      child = "${prefix}_link_4"
+      bias_parent = "${prefix}_link_3_bias"
+      bias_child = "${prefix}_link_4_bias"
+      origin = "0 0 0.1873"
+      axis = "0 1 0"
+      min_deg = "-84"
+      max_deg = "98"
+      velocity = "198"
+      effort = "0.1"
+    />
+    <xacro:create_joint
+      name = "${prefix}_joint_5"
+      parent = "${prefix}_link_4"
+      child = "${prefix}_link_5"
+      bias_parent = "${prefix}_link_4_bias"
+      bias_child = "${prefix}_link_5_bias"
+      origin = "0 0 0.0199"
+      axis = "0 0 1"
+      min_deg = "-164"
+      max_deg = "150"
+      velocity = "800"
+      effort = "3"
+    />
+
+    <!-- Fixed joint between gripper and last link -->
+    <joint name="${prefix}_gripper_base_joint" type="fixed">
+      <origin xyz="0 0 0.016" rpy="0 0 ${-pi / 6}" />
+      <parent link="${prefix}_link_5" />
+      <child link="${prefix}_link_gripper" />
+    </joint>
+
+
+    <!-- Fixed joint between gripper and TOF optical frame -->
+    <joint name="${prefix}_tof_optical_joint" type="fixed">
+      <origin xyz="0 0 0.09" rpy="0 0 0" />
+      <parent link="${prefix}_link_gripper" />
+      <child link="tof_optical_frame_id" />
+    </joint>
+
+    <!-- Fixed joint between link 4 and eef_aruco -->
+    <joint name="${prefix}_eef_aruco_joint" type="fixed">
+      <origin xyz="0 0 -0.06" rpy="0 ${pi} ${-pi / 2}" />
+      <parent link="${prefix}_link_4_bias" />
+      <child link="${prefix}_eef_aruco" />
+    </joint>
+
+    <!-- Gripper motor joint -->
+    <xacro:create_joint
+      name = "${prefix}_gripper"
+      parent = "${prefix}_link_gripper"
+      child = "${prefix}_link_gripper_phantom"
+      bias_parent = "none"
+      bias_child = "none"
+      origin = "0 0 0"
+      axis = "0 0 1"
+      min_deg = "30"
+      max_deg = "160"
+      velocity = "400"
+      effort = "0.5"
+    />
+    
+  </xacro:macro>
+</robot>

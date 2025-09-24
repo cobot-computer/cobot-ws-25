@@ -1,0 +1,11 @@
+# Set the time information for both players of the current game.
+
+### Request ###
+
+chess_msgs/ChessTime time
+
+---
+
+### Response ###
+
+bool success

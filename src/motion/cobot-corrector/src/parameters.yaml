@@ -1,0 +1,151 @@
+cobot_corrector_params:
+  cobot_prefix:
+    {
+      type: string,
+      default_value: "",
+      description: "The prefix to attach to parameters for this cobot.",
+    }
+
+  transforms:
+    aruco_frame:
+      {
+        type: string,
+        default_value: "cobot_calibration_aruco",
+        description: "The frame that defines the calibration aruco board."
+      }
+    base_frame:
+      {
+        type: string,
+        default_value: "base",
+        description: "The name of the frame_id of the base of the COBOT.",
+      }
+
+  subscriptions:
+    joint_states:
+      {
+        type: string,
+        default_value: "joint_states",
+        description: "The topic to subscribe to for the joint states.",
+      }
+    robot_description:
+      {
+        type: string,
+        default_value: "robot_description",
+        description: "The topic to subscribe to for the robot description.",
+      }
+    camera_base_topic:
+      {
+        type: string,
+        default_value: "tof/ir/image_raw",
+        description: "The base topic that the overhead camera publishes to."
+      }
+
+  services:
+    execute:
+      {
+        type: string,
+        default_value: "cobot_corrector/execute",
+        description: "The name of the service that executes cobot correction."
+      }
+
+  publishers:
+    commands:
+      {
+        type: string,
+        default_value: "bias_controller/commands",
+        description:
+          "The topic to publish biases to. A position_controllers/JointGroupPositionController
+          subscribes to this topic.",
+      }
+
+  links:
+    base:
+      {
+        type: string,
+        default_value: "base",
+        description: "The name of the base link of the robot.",
+      }
+    tof:
+      {
+        type: string,
+        default_value: "tof_optical_frame_id",
+        description: "The link that defines the TOF camera's optical frame."
+      }
+
+
+  genetic_alg:
+    generation_size:
+      {
+        type: int,
+        default_value: 1000,
+        description: "Number of configurations to try per generation."
+      }
+    max_iterations:
+      {
+        type: int,
+        default_value: 1000,
+        description: "Maximum number of iterations to run."
+      }
+    exit_error:
+      {
+        type: double,
+        default_value: 0.018,
+        description: "The algorithm will exit if it reaches this error."
+      }
+    top_cut:
+      {
+        type: double,
+        default_value: 0.1,
+        description: "The fraction of configurations to keep between generations."
+      }
+    joints:
+      names:
+        {
+          type: string_array,
+          default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5"],
+          description: "The names of the joints of the robot.",
+        }
+      mutation_factor:
+        {
+          type: double_array,
+          default_value: [0.017, 0.017, 0.034, 0.008, 0.034, 0.034],
+          description: "Maximum change for each joint between generations (radians)."
+        }
+    axes_weights:
+      x:
+        {
+          type: double,
+          default_value: 1,
+          description: "The weight of the X axis in the error function."
+        }
+      y:
+        {
+          type: double,
+          default_value: 1,
+          description: "The weight of the Y axis in the error function."
+        }
+      z:
+        {
+          type: double,
+          default_value: 0.001,
+          description: "The weight of the Z axis in the error function."
+        }
+      roll:
+        {
+          type: double,
+          default_value: 0.02,
+          description: "The weight of the roll axis in the error function."
+        }
+      pitch:
+        {
+          type: double,
+          default_value: 0.02,
+          description: "The weight of the pitch axis in the error function."
+        }
+      yaw:
+        {
+          type: double,
+          default_value: 0.02,
+          description: "The weight of the yaw axis in the error function."
+        }
+

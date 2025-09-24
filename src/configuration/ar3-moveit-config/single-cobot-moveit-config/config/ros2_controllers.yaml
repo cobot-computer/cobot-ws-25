@@ -1,0 +1,53 @@
+# This config file is used by ros2_control
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    cobot0_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    cobot0_gripper_controller:
+      type: position_controllers/GripperActionController
+    cobot0_bias_controller:
+      type: position_controllers/JointGroupPositionController
+
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+cobot0_controller:
+  ros__parameters:
+    joints:
+      - cobot0_joint_0
+      - cobot0_joint_1
+      - cobot0_joint_2
+      - cobot0_joint_3
+      - cobot0_joint_4
+      - cobot0_joint_5
+    command_interfaces:
+      - position
+      - velocity
+    state_interfaces:
+      - position
+      - velocity
+
+cobot0_gripper_controller:
+  ros__parameters:
+    joint: cobot0_gripper
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+
+cobot0_bias_controller:
+  ros__parameters:
+    joints:
+      - cobot0_joint_0_bias
+      - cobot0_joint_1_bias
+      - cobot0_joint_2_bias
+      - cobot0_joint_3_bias
+      - cobot0_joint_4_bias
+      - cobot0_joint_5_bias
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position

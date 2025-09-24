@@ -1,0 +1,12 @@
+# Restart the chess game.
+
+### Request ###
+
+chess_msgs/FullFEN initial_fen
+chess_msgs/GameConfig config
+
+---
+
+### Response ###
+
+bool success

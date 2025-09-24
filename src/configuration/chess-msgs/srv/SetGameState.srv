@@ -1,0 +1,11 @@
+# Set the game state.
+
+### Request ###
+
+chess_msgs/FullFEN fen
+
+---
+
+### Response ###
+
+bool success

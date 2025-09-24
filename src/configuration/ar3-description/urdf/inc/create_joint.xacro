@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="create_joint" params="
+    name
+    parent
+    child
+    bias_parent
+    bias_child
+    origin
+    axis
+    min_deg
+    max_deg
+    velocity
+    effort
+  ">
+  
+    <joint name="${name}" type="revolute">
+      <parent link="${parent}" />
+      <child link="${child}" />
+      <origin xyz="${origin}" rpy="0 0 0" />
+      <axis xyz="${axis}" />
+      <limit 
+        effort="${effort}"
+        lower="${min_deg*pi/180}"
+        upper="${max_deg*pi/180}"
+        velocity="${velocity*pi/180}"
+      />
+    </joint>
+
+    <xacro:unless value="${bias_parent == 'none' or bias_child == 'none'}">
+      <joint name="${name}_bias" type="revolute">
+        <parent link="${bias_parent}" />
+        <child link="${bias_child}" />
+        <origin xyz="${origin}" rpy="0 0 0" />
+        <axis xyz="${axis}" />
+        <limit 
+          effort="${effort}"
+          lower="${min_deg*pi/180}"
+          upper="${max_deg*pi/180}"
+          velocity="${velocity*pi/180}"
+        />
+      </joint>
+    </xacro:unless>
+  </xacro:macro>
+</robot>

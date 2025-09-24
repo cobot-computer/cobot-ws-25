@@ -1,0 +1,53 @@
+aruco_transforms_params:
+  camera_base_topic:
+    {
+      type: string,
+      default_value: "kinect2/color/image_raw",
+      description: "The base topic of the camera publisher that contains the chessboard image.",
+    }
+
+  chessboard:
+    frame:
+      {
+        type: string,
+        default_value: "chessboard_frame_dynamic",
+        description: "The TF2 frame_id of the chessboard.",
+      }
+    warped:
+      topic:
+        {
+          type: string,
+          default_value: "chessboard/image_raw",
+          description: "The base topic to publish warped images of the chessboard to.",
+        }
+      size:
+        {
+          type: int,
+          default_value: 512,
+          description: "The size of the warped chessboard image in pixels.",
+        }
+
+  table:
+    frame:
+      { type: string, default_value: "table_frame", description: "The TF2 frame_id of the table." }
+    warped:
+      topic:
+        {
+          type: string,
+          default_value: "table/image_raw",
+          description: "The base topic to publish warped images of the table to.",
+        }
+      width:
+        {
+          type: int,
+          default_value: 1024,
+          description: "The width of the warped table image in pixels.",
+        }
+
+  cobot0_eef:
+    pose_topic:
+      {
+        type: string,
+        default_value: "cobot0/eef_pose",
+        description: "The topic to publish the pose of cobot0's end effector to.",
+      }

@@ -1,0 +1,11 @@
+# Restart the chess clock.
+
+### Request ###
+
+chess_msgs/GameConfig config
+
+---
+
+### Response ###
+
+bool success

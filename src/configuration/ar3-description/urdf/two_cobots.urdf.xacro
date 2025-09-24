@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<robot name="two_cobots" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:include filename="$(find ar3_description)/urdf/inc/create_ar3.xacro" />
+
+    <link name="base_link"></link>
+
+    <xacro:create_ar3
+        prefix="cobot0"
+        origin_xyz="0 0 0"
+        origin_rpy="0 0 0"
+        parent_link="base_link"
+    />
+    <xacro:create_ar3
+        prefix="cobot1"
+        origin_xyz="1.9 0 0"
+        origin_rpy="0 0 ${pi}"
+        parent_link="base_link"
+    />
+
+</robot>
