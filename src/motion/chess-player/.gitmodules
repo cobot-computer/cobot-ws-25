@@ -1,3 +1,0 @@
-[submodule "libchess"]
-	path = libchess
-	url = git@github.com:kz04px/libchess.git
