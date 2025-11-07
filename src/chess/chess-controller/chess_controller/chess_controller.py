@@ -153,8 +153,16 @@ class ChessEngineActionServer(Node):
                 goal_handle.succeed()
                 result = FindBestMove.Result()
                 result.move.move = engine_move.uci()
-                result.move.draw = Falsedriver of the
-                resul_result.draw_offered:
+                result.move.draw = False
+                return result
+            
+        # Play mode allows drawing and resigning, but not cancellation
+        else:
+            self.get_logger().info("Executing in play mode")
+            engine_result = self._engine.play(board, limit=limit)
+            result = FindBestMove.Result()
+
+            if engine_result.draw_offered:
                 result.move.draw = True
                 result.move.resign = False
             elif engine_result.resigned:
