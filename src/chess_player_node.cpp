@@ -1,4 +1,4 @@
-#include "chess_player_breakdown/chess_player_node.hpp"
+#include "motion/chess-player/include/chess_player/chess_player_node.hpp"
 
 ChessPlayerNode::ChessPlayerNode(std::string node_name)
 : Node(node_name), current_state_("IDLE")

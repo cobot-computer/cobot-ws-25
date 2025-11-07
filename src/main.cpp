@@ -1,5 +1,5 @@
 #include <rclcpp/rclcpp.hpp>
-#include "chess_player_breakdown/chess_player_node.hpp"
+#include "motion/chess-player/include/chess_player/chess_player_node.hpp"
 
 int main(int argc, char** argv)
 {
