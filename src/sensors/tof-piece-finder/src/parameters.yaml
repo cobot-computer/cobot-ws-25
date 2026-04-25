@@ -2,13 +2,13 @@ tof_piece_finder:
   depth_camera_base_topic:
     {
       type: string,
-      default_value: "tof/depth/image_raw",
+      default_value: "camera/camera/depth/image_rect_raw",
       description: "The base topic of the depth camera publisher that contains the image.",
     }
   ir_camera_base_topic:
     {
       type: string,
-      default_value: "tof/ir/image_raw",
+      default_value: "camera/camera/infra1/image_rect_raw",
       description: "The base topic of the IR camera publisher that contains the image.",
     }
 
@@ -76,20 +76,20 @@ tof_piece_finder:
       min_distance:
         {
           type: double,
-          default_value: 0.09,
+          default_value: 0.12,
           description: "The smallest distance from the camera to consider.",
         }
       min_piece_size:
         {
           type: int,
-          default_value: 64,
+          default_value: 500,
           description:
             "The minimum number of pixels that a piece must have to be considered a piece.",
         }
       max_piece_size:
         {
           type: int,
-          default_value: 3000,
+          default_value: 30000,
           description:
             "The maximum number of pixels that a piece must have to be considered a piece.",
         }

@@ -7,3 +7,4 @@ uint32 white_time_left
 uint32 black_time_left
 bool paused
 bool active
+bool white_to_play

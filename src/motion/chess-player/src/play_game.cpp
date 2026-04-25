@@ -123,6 +123,7 @@ bool ChessPlayerNode::take_turn_()
         continue;
       case Result::ERR_FATAL:
         RCLCPP_ERROR(get_logger(), "Failed to find best move, exiting");
+        set_state(State::WAITING_FOR_TURN);
         return false;
     }
   }
@@ -168,7 +169,10 @@ bool ChessPlayerNode::take_turn_()
         }
       }
     }();
-    if (!capture_result) return false;
+    if (!capture_result) {
+      set_state(State::WAITING_FOR_TURN);
+      return false;
+    }
   }
 
   // Move the piece.
@@ -189,7 +193,10 @@ bool ChessPlayerNode::take_turn_()
       }
     }
   }();
-  if (!move_result) return false;
+  if (!move_result) {
+    set_state(State::WAITING_FOR_TURN);
+    return false;
+  }
 
   // Hit the clock.
   set_state(ChessPlayerNode::State::HITTING_CLOCK);
@@ -209,7 +216,10 @@ bool ChessPlayerNode::take_turn_()
       }
     }
   }();
-  if (!hit_clock_result) return false;
+  if (!hit_clock_result) {
+    set_state(State::WAITING_FOR_TURN);
+    return false;
+  }
 
   // Move to home.
   set_state(ChessPlayerNode::State::MOVING_TO_HOME);
@@ -229,47 +239,10 @@ bool ChessPlayerNode::take_turn_()
       }
     }
   }();
-  if (!move_home_result) return false;
-
-  // Move to home.
-  set_state(ChessPlayerNode::State::MOVING_TO_HOME);
-  const auto move_home_result1 = [this] {
-    while (1) {
-      const auto result = move_home_();
-      switch (result) {
-        case Result::OK:
-          return true;
-        case Result::ERR_RETRY:
-          RCLCPP_WARN(get_logger(), "Failed to move to home, retrying in 100ms");
-          this_thread::sleep_for(100ms);
-          continue;
-        case Result::ERR_FATAL:
-          RCLCPP_ERROR(get_logger(), "Failed to move to home, exiting");
-          return false;
-      }
-    }
-  }();
-  if (!move_home_result1) return false;
-
-  // Move to home.
-  set_state(ChessPlayerNode::State::MOVING_TO_HOME);
-  const auto move_home_result2 = [this] {
-    while (1) {
-      const auto result = move_home_();
-      switch (result) {
-        case Result::OK:
-          return true;
-        case Result::ERR_RETRY:
-          RCLCPP_WARN(get_logger(), "Failed to move to home, retrying in 100ms");
-          this_thread::sleep_for(100ms);
-          continue;
-        case Result::ERR_FATAL:
-          RCLCPP_ERROR(get_logger(), "Failed to move to home, exiting");
-          return false;
-      }
-    }
-  }();
-  if (!move_home_result2) return false;
+  if (!move_home_result) {
+    set_state(State::WAITING_FOR_TURN);
+    return false;
+  }
 
   set_state(State::WAITING_FOR_TURN);
   return true;

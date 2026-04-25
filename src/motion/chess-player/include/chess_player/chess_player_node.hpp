@@ -8,6 +8,7 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <chess_msgs/action/find_best_move.hpp>
+#include <std_srvs/srv/set_bool.hpp>
 #include <chess_msgs/msg/camera_points.hpp>
 #include <chess_msgs/msg/chess_move_uci.hpp>
 #include <chess_msgs/msg/chess_time.hpp>
@@ -66,8 +67,8 @@ public:
   // The move group for the arm of the cobot.
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> main_move_group;
 
-  // The move group for the gripper.
-  std::shared_ptr<moveit::planning_interface::MoveGroupInterface> gripper_move_group;
+  // Service client to open/close the gripper (True=close, False=open).
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr gripper_client;
 
   // The action client for finding the best move.
   std::shared_ptr<rclcpp_action::Client<chess_msgs::action::FindBestMove>> find_best_move_client;

@@ -1,6 +1,9 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/transform.hpp>
 #include <libchess/position.hpp>
+#include <moveit_msgs/msg/constraints.hpp>
+#include <moveit_msgs/msg/joint_constraint.hpp>
+#include <std_srvs/srv/set_bool.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include "chess_player/chess_player_node.hpp"
@@ -123,12 +126,31 @@ Result move_to_pose(ChessPlayerNode& chess_player, const Pose& pose)
       return Result::ERR_RETRY;
     }
 
+    // Constrain joint_4 to its positive range [0°, 98°] so the gripper faces
+    // down toward the board instead of the IK solver picking the flipped solution.
+    {
+      moveit_msgs::msg::JointConstraint j4;
+      j4.joint_name = "cobot0_joint_4";
+      j4.position = 0.855;          // midpoint of [0, 1.71 rad]
+      j4.tolerance_above = 0.855;   // allows up to 98°
+      j4.tolerance_below = 0.855;   // allows down to 0°
+      j4.weight = 1.0;
+      moveit_msgs::msg::Constraints constraints;
+      constraints.joint_constraints.push_back(j4);
+      chess_player.main_move_group->setPathConstraints(constraints);
+    }
+
     // Plan the motion.
     const auto [success, plan] = [&] {
       moveit::planning_interface::MoveGroupInterface::Plan plan;
       const auto ok = static_cast<bool>(chess_player.main_move_group->plan(plan));
       return make_pair(ok, plan);
     }();
+
+    // Always clear constraints immediately after planning so they don't leak
+    // into subsequent calls (named-pose moves, servo, etc.).
+    chess_player.main_move_group->clearPathConstraints();
+
     if (!success) {
       RCLCPP_ERROR(chess_player.node->get_logger(), "Failed to plan motion");
       return Result::ERR_FATAL;
@@ -237,6 +259,35 @@ Result move_to_named_pose_async(ChessPlayerNode& chess_player, MoveGroupInterfac
                    target.c_str(), moveit::core::error_code_to_string(result).c_str());
       return Result::ERR_FATAL;
   }
+}
+
+/**
+ * Send an open or close command to the gripper node over the chess/gripper service.
+ * close=true closes the gripper; close=false opens it.
+ */
+Result gripper_command(ChessPlayerNode& chess_player, bool close)
+{
+  using std_srvs::srv::SetBool;
+  auto request = std::make_shared<SetBool::Request>();
+  request->data = close;
+
+  if (!chess_player.gripper_client->wait_for_service(std::chrono::seconds(2))) {
+    RCLCPP_ERROR(chess_player.get_logger(), "Gripper service not available");
+    return Result::ERR_FATAL;
+  }
+
+  auto future = chess_player.gripper_client->async_send_request(request);
+  while (future.wait_for(std::chrono::milliseconds(50)) != std::future_status::ready) {
+    if (chess_player.get_state() == ChessPlayerNode::State::DISABLED) {
+      return Result::ERR_FATAL;
+    }
+  }
+
+  if (!future.get()->success) {
+    RCLCPP_ERROR(chess_player.get_logger(), "Gripper command failed");
+    return Result::ERR_FATAL;
+  }
+  return Result::OK;
 }
 
 //                                                                                                //
@@ -396,7 +447,7 @@ Result pick_up_piece(ChessPlayerNode& chess_player, const libchess::Square& squa
 
   // Open the gripper.
   {
-    const auto result = move_to_named_pose(chess_player, chess_player.gripper_move_group, "open");
+    const auto result = gripper_command(chess_player, false);
     if (result != Result::OK) return result;
   }
 
@@ -440,7 +491,7 @@ Result pick_up_piece(ChessPlayerNode& chess_player, const libchess::Square& squa
 
   // Close the gripper.
   {
-    const auto result = move_to_named_pose(chess_player, chess_player.gripper_move_group, "close");
+    const auto result = gripper_command(chess_player, true);
     if (result != Result::OK) return result;
   }
 
@@ -482,19 +533,35 @@ Result place_piece(ChessPlayerNode& chess_player, const libchess::Square& square
   }();
 
   // Move the end effector down to place the piece.
-  {
-    const auto down_pose = [&] {
-      auto pose = pose_at_square;
-      posae the end effector back up.
-  {
-    const auto up_pose = [&] {
-      auto pose = pose_at_square;
-      pose.position.z += chess_player.get_params().measurements.hover_above_board;
-      return pose;
-    }();
-    const auto result = move_to_pose(chess_player, up_pose);
-    if (result != Result::OK) return result;
-  }
+{
+  const auto down_pose = [&] {
+    auto pose = pose_at_square;
+    pose.position.z = get_chessboard_z(chess_player) +
+                      chess_player.get_params().measurements.min_grasp_height;
+    return pose;
+  }();
+
+  const auto result = move_to_pose(chess_player, down_pose);
+  if (result != Result::OK) return result;
+}
+
+// Open the gripper to release the piece.
+{
+  const auto result = gripper_command(chess_player, false);
+  if (result != Result::OK) return result;
+}
+
+// Move the end effector back up.
+{
+  const auto up_pose = [&] {
+    auto pose = pose_at_square;
+    pose.position.z += chess_player.get_params().measurements.hover_above_board;
+    return pose;
+  }();
+
+  const auto result = move_to_pose(chess_player, up_pose);
+  if (result != Result::OK) return result;
+}
 
   return Result::OK;
 }
@@ -527,7 +594,7 @@ Result deposit_captured_piece(ChessPlayerNode& chess_player)
 
   // Open the gripper.
   {
-    const auto result = move_to_named_pose(chess_player, chess_player.gripper_move_group, "open");
+    const auto result = gripper_command(chess_player, false);
     if (result != Result::OK) return result;
   }
 
@@ -608,7 +675,7 @@ Result ChessPlayerNode::hit_clock_()
 
   // Close the gripper.
   {
-    const auto result = move_to_named_pose(*this, gripper_move_group, "close");
+    const auto result = gripper_command(*this, true);
     if (result != Result::OK) return result;
   }
 
@@ -648,6 +715,12 @@ Result ChessPlayerNode::hit_clock_()
   // Move the gripper back up.
   {
     const auto result = move_to_named_pose(*this, main_move_group, "above_clock");
+    if (result != Result::OK) return result;
+  }
+
+  // Release the gripper now that the clock is pressed.
+  {
+    const auto result = gripper_command(*this, false);
     if (result != Result::OK) return result;
   }
 

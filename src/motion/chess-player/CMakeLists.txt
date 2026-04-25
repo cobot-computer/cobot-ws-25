@@ -15,6 +15,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 generate_parameter_library(
   chess_player_params
@@ -41,6 +42,7 @@ ament_target_dependencies(chess_player PUBLIC
   chess_msgs
   sensor_msgs
   rclcpp_action
+  std_srvs
 )
 
 target_link_libraries(chess_player PRIVATE

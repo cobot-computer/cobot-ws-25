@@ -227,21 +227,8 @@ hardware_interface::CallbackReturn
 AR3HardwareInterface::on_deactivate(const rclcpp_lifecycle::State& previous_state)
 {
   std::ignore = previous_state;
-
-  // Send reset command.
-  try {
-    auto logger = get_logger();
-    uint32_t msg_id = messenger_.send_request(RequestType::Reset, nullptr, 0, serial_port_, logger);
-    messenger_.wait_for_ack(msg_id, serial_port_, logger);
-    messenger_.wait_for_done(msg_id, serial_port_, logger);
-  } catch (const exception& e) {
-    RCLCPP_ERROR(get_logger(), "Failed to deactivate robot: %s", e.what());
-    return CallbackReturn::ERROR;
-  } catch (const CobotError& e) {
-    RCLCPP_ERROR(get_logger(), "Failed to deactivate robot: %s", e.to_string().c_str());
-    return CallbackReturn::ERROR;
-  }
-
+  // Do not send Reset — it clears calibration state on the Teensy, requiring a full
+  // recalibrate/rehome cycle on every demo restart.
   return CallbackReturn::SUCCESS;
 }
 

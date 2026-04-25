@@ -2,7 +2,7 @@ aruco_transforms_params:
   camera_base_topic:
     {
       type: string,
-      default_value: "kinect2/color/image_raw",
+      default_value: "image_raw",
       description: "The base topic of the camera publisher that contains the chessboard image.",
     }
 

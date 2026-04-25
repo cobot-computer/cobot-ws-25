@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ros_ws_bridge</name>
+  <version>0.0.1</version>
+  <description>WebSocket bridge between ROS2 topics and the cobot dashboard GUI</description>
+  <maintainer email="cobot@cobot-pc.local">cobot</maintainer>
+  <license>MIT</license>
+  <depend>rclpy</depend>
+  <depend>chess_msgs</depend>
+  <exec_depend>python3-websockets</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

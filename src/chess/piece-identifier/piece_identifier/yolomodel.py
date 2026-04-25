@@ -2,12 +2,15 @@ from ament_index_python.packages import get_package_share_directory
 from PIL import Image as PILImage
 from PIL import ImageDraw, ImageFont
 from ultralytics import YOLO
+import cv2
+import numpy as np
 import os
 
 TEXT_SIZE = 8
 DEBUG_MUL = 1
 
 B_PERCENT = 22 / 377
+_DEBUG_SAVED = False
 RESIZE_TO = (50, 50)
 
 
@@ -54,6 +57,13 @@ class YOLOModel:
             (crop_x, crop_y, crop_x + crop_width, crop_y + crop_height)
         )
 
+        # Normalize contrast over the full board before cropping individual squares
+        arr = np.array(checkerboard_img)
+        lab = cv2.cvtColor(arr, cv2.COLOR_RGB2LAB)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        checkerboard_img = PILImage.fromarray(cv2.cvtColor(lab, cv2.COLOR_LAB2RGB))
+
         checkerboard_width, checkerboard_height = checkerboard_img.size
 
         # Calculate the size of each cell
@@ -81,6 +91,14 @@ class YOLOModel:
                 images.append(cell_image)
 
         results = self.predict(images)
+
+        global _DEBUG_SAVED
+        if not _DEBUG_SAVED:
+            _DEBUG_SAVED = True
+            contact = PILImage.new("RGB", (50 * 8, 50 * 8))
+            for i, img in enumerate(images):
+                contact.paste(img, ((i % 8) * 50, (i // 8) * 50))
+            contact.save("/tmp/yolo_crops_debug.png")
 
         draw_img = image.copy().resize(
             (image.size[0] * DEBUG_MUL, image.size[1] * DEBUG_MUL)

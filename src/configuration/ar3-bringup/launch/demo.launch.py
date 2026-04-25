@@ -1,6 +1,7 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction, RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from moveit_configs_utils import MoveItConfigsBuilder
@@ -111,16 +112,10 @@ def generate_launch_description():
         output="both",
     )
 
-    kinect2ros = Node(
-        package='kinect2ros',
-        executable='kinect2ros',
-        name='kinect2ros'
-    )
-
     aruco_transforms = Node(
         package='aruco_transforms',
         executable='aruco_transforms',
-        name='aruco_transforms'
+        name='aruco_transforms',
     )
 
     cobot_corrector = Node(
@@ -143,7 +138,7 @@ def generate_launch_description():
         executable="rviz2",
         name="rviz2",
         output="log",
-        arguments=['-d', rviz_config],
+        arguments=['-d', rviz_config, '--ros-args', '--log-level', 'rviz2:=WARN'],
         parameters=[
             moveit_config.robot_description,
             moveit_config.robot_description_semantic,
@@ -151,6 +146,18 @@ def generate_launch_description():
             moveit_config.planning_pipelines,
             moveit_config.joint_limits,
         ],
+    )
+
+    realsense = Node(
+        package='realsense2_camera',
+        executable='realsense2_camera_node',
+        name='camera',
+        namespace='camera',
+        parameters=[{
+            'enable_infra1': True,
+            'enable_infra2': False,
+            'enable_color': False,
+        }],
     )
 
     chess_controller = Node(
@@ -165,6 +172,8 @@ def generate_launch_description():
         name="chess_player",
         parameters=[
             {'cobot_ns': 'cobot0'},
+            {'cobot_color': 'black'},
+            {'frames.chessboard': 'chessboard_frame_dynamic'},
         ]
     )
 
@@ -193,6 +202,33 @@ def generate_launch_description():
         executable="clock_node",
     )
 
+    gripper_node = Node(
+        package="gripper_node",
+        executable="gripper_node",
+        name="gripper_node",
+    )
+
+    kill_old_bridge = ExecuteProcess(
+        cmd=['bash', '-c', 'pkill -f ros_ws_bridge; sleep 0.5; true'],
+        output='log',
+    )
+
+    ros_ws_bridge = Node(
+        package="ros_ws_bridge",
+        executable="ros_ws_bridge",
+        name="ros_ws_bridge",
+    )
+
+    # Start ros_ws_bridge only after kill_old_bridge has exited so the port is free.
+    start_bridge_after_kill = RegisterEventHandler(
+        OnProcessExit(target_action=kill_old_bridge, on_exit=[ros_ws_bridge])
+    )
+
+    dashboard = ExecuteProcess(
+        cmd=['/home/cobot/cobot-dash/cobot-dash/cobot_dashboard/build/linux/x64/release/bundle/cobot_dashboard'],
+        output='log',
+    )
+
     return LaunchDescription([
         rviz_config_arg,
         # cobot_corrector,
@@ -204,13 +240,17 @@ def generate_launch_description():
         move_group,
         robot_state,
         static_tf,
-        kinect2ros,
         aruco_transforms,
+        realsense,
         tof_piece_finder,
         rviz,
         chess_controller,
         chess_player,
         servo_node,
         piece_identifier,
-        clock_node
+        clock_node,
+        gripper_node,
+        kill_old_bridge,
+        start_bridge_after_kill,
+        TimerAction(period=5.0, actions=[dashboard]),
     ])

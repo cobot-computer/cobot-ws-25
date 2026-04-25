@@ -5,10 +5,13 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1/Scene Geometry1
+        - /USB Cam1
+        - /USB Cam1/Topic1
         - /Chessboard1
-        - /Pose1
+        - /Image2
+        - /Depth Sensor1
       Splitter Ratio: 0.3862660825252533
-    Tree Height: 193
+    Tree Height: 152
   - Class: rviz_common/Help
     Name: Help
   - Class: rviz_common/Views
@@ -351,24 +354,23 @@ Visualization Manager:
       Enabled: true
       Far Plane Distance: 100
       Image Rendering: background and overlay
-      Name: Kinect
+      Name: USB Cam
       Overlay Alpha: 0.20000000298023224
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /kinect2/color/image_raw
+        Value: /image_raw
       Value: true
       Visibility:
-        Camera Location: true
         Chessboard: true
         Chessboard Location: true
         Cobot0 Location: true
+        Depth Sensor: true
         Grid: true
         Image: true
         Kinect Pointcloud: false
-        Kinect Raw: true
         MotionPlanning: true
         Pose: true
         TOF: true
@@ -419,20 +421,6 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /tof/pieces/annotated/image_raw
       Value: false
-    - Class: rviz_default_plugins/Image
-      Enabled: false
-      Max Value: 1
-      Median window: 5
-      Min Value: 0
-      Name: Kinect Raw
-      Normalize Range: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /kinect2/color/image_raw
-      Value: false
     - Class: rviz_default_plugins/Axes
       Enabled: true
       Length: 0.20000000298023224
@@ -453,13 +441,6 @@ Visualization Manager:
       Name: Table Location
       Radius: 0.009999999776482582
       Reference Frame: table_frame
-      Value: true
-    - Class: rviz_default_plugins/Axes
-      Enabled: true
-      Length: 0.10000000149011612
-      Name: Camera Location
-      Radius: 0.009999999776482582
-      Reference Frame: kinect2_color_optical_frame
       Value: true
     - Alpha: 1
       Axes Length: 0.10000000149011612
@@ -509,6 +490,35 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /tof/pieces/binary/image_raw
       Value: true
+    - Class: rviz_default_plugins/Camera
+      Enabled: true
+      Far Plane Distance: 100
+      Image Rendering: background and overlay
+      Name: Depth Sensor
+      Overlay Alpha: 0.5
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /dev/video2
+      Value: true
+      Visibility:
+        Chessboard: true
+        Chessboard Location: true
+        Cobot0 Location: true
+        Grid: true
+        Image: true
+        Kinect Pointcloud: true
+        MotionPlanning: true
+        Pose: true
+        TOF: true
+        TOF Pointcloud: true
+        Table: true
+        Table Location: true
+        USB Cam: true
+        Value: true
+      Zoom Factor: 1
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -527,7 +537,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.6952812671661377
+      Distance: 4.886709213256836
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -542,13 +552,15 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.864795982837677
+      Pitch: 0.25479745864868164
       Target Frame: base_link
       Value: Orbit (rviz_default_plugins)
-      Yaw: 5.25200080871582
+      Yaw: 3.731990337371826
     Saved: ~
 Window Geometry:
   Chessboard:
+    collapsed: false
+  Depth Sensor:
     collapsed: false
   Displays:
     collapsed: false
@@ -559,21 +571,19 @@ Window Geometry:
   Hide Right Dock: false
   Image:
     collapsed: false
-  Kinect:
-    collapsed: false
-  Kinect Raw:
-    collapsed: false
   MotionPlanning:
     collapsed: false
   MotionPlanning - Trajectory Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000002000000000000016e0000039efc020000000bfb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000100044006900730070006c006100790073010000003d00000144000000c900fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000014e0000028d0000017d00fffffffb0000000800480065006c0070000000029a0000006e0000006e00fffffffb0000000a0056006900650077007300000002c200000119000000a400fffffffb0000000c00430061006d0065007200610000000339000000a20000000000000000fb0000000c00430061006d0065007200610000000339000000a20000000000000000fb0000000c00430061006d006500720061020000000c0000003900000774000003fffb0000000c00430061006d006500720061030000005a00000043000006e50000039dfb0000000a0049006d0061006700650100000187000001250000002800fffffffb0000000a0049006d00610067006501000002b2000001290000002800ffffff00000001000002130000039efc0200000005fb000000060054004f0046000000003d000000fe0000002800fffffffb00000014004b0069006e0065006300740020005200610077000000003d000000d60000002800fffffffb0000000c004b0069006e006500630074010000003d000001520000002800fffffffb0000000a005400610062006c00650000000145000000d30000002800fffffffb00000014004300680065007300730062006f0061007200640100000195000002460000002800ffffff000003f30000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000002000000000000016e0000039efc020000000efb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000004100fffffffb000000100044006900730070006c006100790073010000003d0000011b000000c900fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000014e0000028d0000017d00fffffffb0000000800480065006c0070000000029a0000006e0000006e00fffffffb0000000a0056006900650077007300000002c200000119000000a400fffffffb0000000c00430061006d0065007200610000000339000000a20000000000000000fb0000000c00430061006d0065007200610000000339000000a20000000000000000fb0000000c00430061006d006500720061020000000c0000003900000774000003fffb0000000c00430061006d006500720061030000005a00000043000006e50000039dfb0000000a0049006d006100670065010000015e000000d70000002800fffffffb0000000a0049006d006100670065010000023b000000da0000002800fffffffb0000000c00430061006d0065007200610100000311000000ca0000000000000000fb0000000c00430061006d0065007200610100000311000000ca0000000000000000fb0000001800440065007000740068002000530065006e0073006f0072010000031b000000c00000002800ffffff00000001000002130000039efc0200000005fb000000060054004f0046000000003d000000c60000002800fffffffb00000014004b0069006e0065006300740020005200610077000000003d000000d60000000000000000fb0000000e005500530042002000430061006d010000003d000001520000002800fffffffb0000000a005400610062006c00650000000154000000ab0000002800fffffffb00000014004300680065007300730062006f0061007200640100000195000002460000002800ffffff000003ad0000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   TOF:
     collapsed: false
   Table:
     collapsed: false
+  USB Cam:
+    collapsed: false
   Views:
     collapsed: false
-  Width: 1920
-  X: 0
+  Width: 1850
+  X: 70
   Y: 27

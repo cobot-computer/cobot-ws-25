@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>gripper_node</name>
+  <version>0.0.0</version>
+  <description>ROS2 node that controls the gripper via serial to an Arduino running the Tic T834 stepper driver.</description>
+  <maintainer email="cobot@cobot.local">cobot</maintainer>
+  <license>GPL-3.0-only</license>
+
+  <depend>rclpy</depend>
+  <depend>std_srvs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

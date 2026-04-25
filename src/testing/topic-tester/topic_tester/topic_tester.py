@@ -58,7 +58,7 @@ class TopicTester(Node):
     def publish_all(self):
         # self.game_state_pub.publish(FullFEN(fen=self.board.fen()))
         self.game_config_pub.publish(self.game_config)
-        # self.time_pub.publish(self.time)
+        self.time_pub.publish(self.time)
         self.cobot0_enabled_pub.publish(CobotEnabled(enabled=self.cobot0_enabled))
         self.cobot0_max_speed_pub.publish(CobotSpeed(speed=self.cobot0_max_speed))
 

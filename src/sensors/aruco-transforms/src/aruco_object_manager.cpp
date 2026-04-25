@@ -286,6 +286,11 @@ void ArucoObjectManager::process(const Mat& input_image, const vector<int> marke
       const auto warped_image_msg =
         cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, warped_image).toImageMsg();
       warped_img_pub_->publish(warped_image_msg);
+      RCLCPP_INFO_THROTTLE(get_logger(), *rclcpp::Clock::make_shared(), 2000,
+                           "Published warped image to %s", warped_img_pub_->getTopic().c_str());
+    } else {
+      RCLCPP_WARN_THROTTLE(get_logger(), *rclcpp::Clock::make_shared(), 2000,
+                           "Warp failed for %s (need all 4 corner markers)", tf_frame_.c_str());
     }
   }
 }

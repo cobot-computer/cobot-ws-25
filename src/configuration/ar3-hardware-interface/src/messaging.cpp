@@ -313,19 +313,6 @@ bool Messenger::try_recv(LibSerial::SerialPort& serial_port, rclcpp::Logger& log
 
         auto response = make_unique<Response>();
 
-  cobot0_joint_0: 0
-  cobot0_joint_1: 0
-  cobot0_joint_2: 0
-  cobot0_joint_3: 0
-  cobot0_joint_4: 0
-  cobot0_joint_5: 0
-  cobot1_gripper: 0
-  cobot1_joint_0: 0
-  cobot1_joint_1: 0
-  cobot1_joint_2: 0
-  cobot1_joint_3: 0
-  cobot1_joint_4: 0
-  cobot1_joint_5: 0
         // Set the response's expiration time.
         auto current_time =
             duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();

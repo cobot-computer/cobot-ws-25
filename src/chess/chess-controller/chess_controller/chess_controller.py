@@ -38,9 +38,11 @@ class ChessEngineActionServer(Node):
         self._goal_lock = threading.Lock()
 
         # Start the chess engine process
-        self._engine = chess.engine.SimpleEngine.popen_uci(self.get_parameter("engine_path").value)
+        self._engine = chess.engine.SimpleEngine.popen_uci(
+            self.get_parameter("engine_path").value
+        )
 
-        # Create action server for finding the best move
+        # Create action server
         self._action_server = ActionServer(
             self,
             FindBestMove,
@@ -55,23 +57,20 @@ class ChessEngineActionServer(Node):
         self.get_logger().info("Chess engine action server is up")
 
     def destroy(self):
-        self._transport.close()
-        self._asyncio_loop.close()
+        self._engine.quit()
         self._action_server.destroy()
         super().destroy_node()
 
     def goal_callback(self, goal_request):
-        """Accept or reject a client request to begin an action."""
         self.get_logger().info("Received goal request")
 
         if self._current_game_config is None:
-            self.get_logger().error("The `game_configuration` topic has not been published to yet")
+            self.get_logger().error("No game configuration received yet")
             return GoalResponse.REJECT
 
         return GoalResponse.ACCEPT
 
     def handle_accepted_callback(self, goal_handle):
-        """Start execution of a goal."""
         with self._goal_lock:
             if self._goal_handle is not None and self._goal_handle.is_active:
                 self.get_logger().info("Aborting previous goal")
@@ -82,7 +81,6 @@ class ChessEngineActionServer(Node):
         goal_handle.execute()
 
     def cancel_callback(self, goal_handle):
-        """Accept or reject a client request to cancel an action."""
         self.get_logger().info("Received cancel request")
 
         if goal_handle.request.analysis_mode:
@@ -93,19 +91,15 @@ class ChessEngineActionServer(Node):
             return CancelResponse.REJECT
 
     def execute_callback(self, goal_handle):
-        """Execute the goal."""
         game_config = self._current_game_config
         if game_config is None:
-            self.get_logger().error(
-                "Best move requested without any data from the `game_configuration` topic`"
-            )
+            self.get_logger().error("No game configuration available")
             goal_handle.abort()
             return FindBestMove.Result()
 
-        board_fen = goal_handle.request.fen.fen
+        board = chess.Board(goal_handle.request.fen.fen)
         remaining_times = goal_handle.request.time
 
-        board = chess.Board(board_fen)
         limit = chess.engine.Limit(
             white_clock=remaining_times.white_time_left / 1000,
             black_clock=remaining_times.black_time_left / 1000,
@@ -113,86 +107,61 @@ class ChessEngineActionServer(Node):
             black_inc=game_config.time_increment / 1000,
         )
 
-        # Analysis mode allows cancellation but not drawing or resigning
         if goal_handle.request.analysis_mode:
             self.get_logger().info("Executing in analysis mode")
+
             analysis = self._engine.analysis(board, limit=limit)
+
             while True:
-                # Check if the goal has been aborted
                 if not goal_handle.is_active:
                     self.get_logger().info("Goal aborted")
                     return FindBestMove.Result()
 
-                # Check if the goal has been cancelled
                 if goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     self.get_logger().info("Goal canceled")
                     return FindBestMove.Result()
 
-                # Wait for the next info from the engine and break if a move is found
                 info = analysis.next()
                 if info is None:
                     break
 
-                # Send feedback to the client
                 for key, value in info.items():
-                    feedback_result = FindBestMove.Feedback()
-                    feedback_result.info.timestamp = self.get_clock().now().to_msg()
-                    feedback_result.info.type = key
-                    feedback_result.info.value = str(value)
-                    goal_handle.publish_feedback(feedback_result)
+                    feedback = FindBestMove.Feedback()
+                    feedback.info.timestamp = self.get_clock().now().to_msg()
+                    feedback.info.type = key
+                    feedback.info.value = str(value)
+                    goal_handle.publish_feedback(feedback)
 
-            # Send the result to the client
-            engine_move = analysis.wait().move
-            if engine_move is None:
-                self.get_logger().error("No move found")
-                goal_handle.abort()
-                return FindBestMove.Result()
-            else:
-                self.get_logger().info("Found best move")
-                goal_handle.succeed()
-                result = FindBestMove.Result()
-                result.move.move = engine_move.uci()
-                result.move.draw = False
-                return result
-            
-        # Play mode allows drawing and resigning, but not cancellation
+            result_move = analysis.wait().move
+
         else:
             self.get_logger().info("Executing in play mode")
-            engine_result = self._engine.play(board, limit=limit)
-            result = FindBestMove.Result()
+            engine_result = self._engine.play(board, limit)
+            result_move = engine_result.move
 
-            if engine_result.draw_offered:
-                result.move.draw = True
-                result.move.resign = False
-            elif engine_result.resigned:
-                result.move.draw = False
-                result.move.resign = True
-            elif engine_result.move is not None:
-                result.move.draw = False
-                result.move.resign = False
-                result.move.move = engine_result.move.uci()
-            else:
-                self.get_logger().error("No move found")
-                goal_handle.abort()
-                return FindBestMove.Result()
+        result = FindBestMove.Result()
 
-            self.get_logger().info("Move found")
+        if result_move is not None:
+            result.move.move = result_move.uci()
+            result.move.draw = False
+            result.move.resign = False
+            self.get_logger().info(f"Best move: {result.move.move}")
             goal_handle.succeed()
             return result
+        else:
+            self.get_logger().error("No move found")
+            goal_handle.abort()
+            return FindBestMove.Result()
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    action_server = ChessEngineActionServer()
+    node = ChessEngineActionServer()
+    rclpy.spin(node)
 
-    rclpy.spin(action_server)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    action_server.destroy_node()
+    node.destroy_node()
     rclpy.shutdown()
 
 

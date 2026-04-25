@@ -49,7 +49,10 @@ ChessPlayerNode::ChessPlayerNode(string nodename)
   // Init move groups.
   main_move_group = make_shared<MoveGroupInterface>(node, params_->move_groups.cobot);
   main_move_group->setMaxAccelerationScalingFactor(1.0);
-  gripper_move_group = make_shared<MoveGroupInterface>(node, params_->move_groups.gripper);
+  main_move_group->setPlanningTime(15.0);
+
+  // Init gripper service client.
+  gripper_client = node->create_client<std_srvs::srv::SetBool>("chess/gripper");
 
   // Init action client.
   find_best_move_client =
@@ -284,7 +287,6 @@ void ChessPlayerNode::enabled_callback_(const chess_msgs::msg::CobotEnabled::Sha
       set_state(State::WAITING_FOR_GAME);
   } else {
     main_move_group->stop();
-    gripper_move_group->stop();
     set_state(State::DISABLED);
     // this_thread::sleep_for(100ms);
     move_out_of_way_();

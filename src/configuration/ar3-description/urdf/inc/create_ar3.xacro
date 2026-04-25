@@ -147,7 +147,7 @@
       child = "${prefix}_link_4"
       bias_parent = "${prefix}_link_3_bias"
       bias_child = "${prefix}_link_4_bias"
-      origin = "0 0 0.1873"
+      origin = "0.034 0.003 0.20"
       axis = "0 1 0"
       min_deg = "-84"
       max_deg = "98"

@@ -124,15 +124,21 @@ private:
   void depth_image_callback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
                             const sensor_msgs::msg::CameraInfo::ConstSharedPtr& cinfo)
   {
-    // Convert the image message to a cv::Mat.
+    // Convert Z16 (uint16 mm) to float32 meters. Zero means no data — set to infinity.
     cv_bridge::CvImagePtr cv_ptr;
     try {
-      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::TYPE_32FC1);
+      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::TYPE_16UC1);
     } catch (cv_bridge::Exception& e) {
       RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
       return;
     }
-    cv_ptr->image.copyTo(depth_img_);
+    cv::Mat depth_float;
+    cv_ptr->image.convertTo(depth_float, CV_32FC1, 1.0 / 1000.0);
+    for (int r = 0; r < depth_float.rows; ++r)
+      for (int c = 0; c < depth_float.cols; ++c)
+        if (depth_float.at<float>(r, c) == 0.f)
+          depth_float.at<float>(r, c) = numeric_limits<float>::infinity();
+    depth_float.copyTo(depth_img_);
     depth_img_stamp_ = rclcpp::Time(image->header.stamp.sec, image->header.stamp.nanosec);
 
     // Copy camera info.
@@ -154,15 +160,17 @@ private:
   void ir_image_callback(const sensor_msgs::msg::Image::ConstSharedPtr& image,
                          const sensor_msgs::msg::CameraInfo::ConstSharedPtr& cinfo)
   {
-    // Convert the image message to a cv::Mat.
+    // RealSense infrared is Y8 (uint8). Convert to float for normalize/display use.
     cv_bridge::CvImagePtr cv_ptr;
     try {
-      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::TYPE_32FC1);
+      cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::MONO8);
     } catch (cv_bridge::Exception& e) {
       RCLCPP_ERROR(get_logger(), "cv_bridge exception: %s", e.what());
       return;
     }
-    cv_ptr->image.copyTo(ir_img_);
+    cv::Mat ir_float;
+    cv_ptr->image.convertTo(ir_float, CV_32FC1);
+    ir_float.copyTo(ir_img_);
     ir_img_stamp_ = rclcpp::Time(image->header.stamp.sec, image->header.stamp.nanosec);
 
     // Copy camera info.
@@ -200,18 +208,6 @@ private:
     else
       depth_masked = depth_blurred.mul(gripper_mask_);
 
-    // Remove all pixels that have too low of an IR intensity.
-    // float min_intensity = numeric_limits<float>::infinity();
-    // float max_intensity = 0;
-    for (int i = 0; i < depth_masked.rows; i++) {
-      for (int j = 0; j < depth_masked.cols; j++) {
-        const float intensity = ir_img_.at<float>(i, j);
-        // if (intensity < min_intensity) min_intensity = intensity;
-        // if (intensity > max_intensity) max_intensity = intensity;
-        if (intensity < 4300) depth_masked.at<float>(i, j) = numeric_limits<float>::infinity();
-      }
-    }
-    // RCLCPP_INFO(node->get_logger(), "Intensity: %0.3f -> %0.3f", min_intensity, max_intensity);
 
     // Create a sorted vector of distances from the image, filtering out the gripper mask and any
     // distances outside the min and max limits.
@@ -297,8 +293,8 @@ private:
     pointcloud_msg_.width = n_points;
     pointcloud_msg_.row_step = n_points * 12;
     vector<chess_msgs::msg::Point2> cam_pts;
-    const int32_t half_cols = 100;
-    const int32_t half_rows = 84;
+    const int32_t half_cols = static_cast<int32_t>(cx_);
+    const int32_t half_rows = static_cast<int32_t>(cy_);
     for (int i = 0; i < n_points; i++) {
       const double col_d = centroids.at<double>(valid_labels[i], 0);
       const double row_d = centroids.at<double>(valid_labels[i], 1);

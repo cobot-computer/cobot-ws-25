@@ -59,7 +59,7 @@ class ClockNode(Node):
         # Declare parameters.
         self.declare_parameter(
             "clock_port",
-            "/dev/ttyACM0",
+            "/dev/ttyACM1",
             ParameterDescriptor(description="Path to the clock serial port"),
         )
         self.declare_parameter(
@@ -69,14 +69,14 @@ class ClockNode(Node):
         )
         self.declare_parameter(
             "time_increment",
-            "1:00",
+            "0:05",
             ParameterDescriptor(description="Time increment for each move"),
         )
 
         # Try to connect to the clock. If it fails, log an error and continue.
         self._clock_port = self.get_parameter("clock_port").value
         try:
-            self._clock_connection = serial.Serial("/dev/ttyACM0", baudrate=9600, timeout=2) #changed from 0 to 2 because of some debug results.  baud 115200 could work? original 9600 
+            self._clock_connection = serial.Serial(self._clock_port, baudrate=9600, timeout=0.1)
             time.sleep(5)
             self.get_logger().info("Clock connected")
         except serial.SerialException:
@@ -90,6 +90,7 @@ class ClockNode(Node):
         self._black_time_left = self._time_base
         self._paused = False
         self._active = False
+        self._white_to_play = True
         self._white_btn_pressed = False
         self._black_btn_pressed = False
 
@@ -134,7 +135,7 @@ class ClockNode(Node):
         self.restart(self._time_base, self._time_increment)
 
         # Create timer for periodically polling the clock.
-        self._clock_timer = self.create_timer(0.01, self.clock_timer_callback)  # 100 Hz-- i am trying slowing it down 
+        self._clock_timer = self.create_timer(0.1, self.clock_timer_callback)  # 10 Hz
 
     def destroy(self):
         if self._clock_connection is not None:
@@ -150,32 +151,42 @@ class ClockNode(Node):
         if self._clock_connection is None:
             self.get_logger().error("Clock is not connected; cannot poll")
             return None
-        msg = str(self._clock_connection.readline())
-        msg = msg.replace('\r\n', '\n')
-        # if not '\n' in msg:
-        #     self.get_logger().warn("Clock timed out")
-        #     return None
-        if msg.strip() == "ack":
+        raw = self._clock_connection.readline()
+        if not raw or b'\n' not in raw:
+            return None  # timeout — no complete line
+        msg = raw.decode('utf-8', errors='replace').strip()
+        if msg == "ack":
             self._acks_received += 1
         else:
             self.handle_message(msg)
         return msg
 
-    def wait_for_ack(self):
+    def wait_for_ack(self, retries=30):
         """
-        Waits for an acknowledgement from the clock. If no acknowledgement is received, logs an
-        error and returns False.
+        Waits for an acknowledgement from the clock. Retries up to `retries` times
+        (each attempt waits up to the serial timeout), then returns False.
+
+        Reads raw serial lines directly rather than routing through poll_clock /
+        handle_message so that transient upd values emitted by the Arduino during
+        a reset do not get published as ChessTime messages.
         """
         if self._clock_connection is None:
             self.get_logger().error("Clock is not connected")
             return False
-        while self._acks_received < 1:
-            msg = self.poll_clock()
-            if msg is None:
-                self.get_logger().error("Did not receive ack in time")
-                return False
-        self._acks_received -= 1
-        return True
+        if self._acks_received >= 1:
+            self._acks_received -= 1
+            return True
+        for _ in range(retries):
+            raw = self._clock_connection.readline()
+            if not raw or b'\n' not in raw:
+                continue
+            msg = raw.decode('utf-8', errors='replace').strip()
+            if msg == "ack":
+                return True
+            # Silently discard upd/btn messages that arrive during a command —
+            # publishing them would flash transient zero values to the GUI.
+        self.get_logger().error("Did not receive ack from clock after retries")
+        return False
 
     def set_time_callback(self, request, response):
         """
@@ -209,6 +220,7 @@ class ClockNode(Node):
             response.success = False
             return response
 
+        request.time.white_to_play = self._white_to_play
         self._time_pub.publish(request.time)
         response.success = True
         return response
@@ -246,7 +258,8 @@ class ClockNode(Node):
         if not self.wait_for_ack():
             self.get_logger().error(f"Clock did not acknowledge command `{cmd}`")
             return False
-               
+
+        self.get_logger().info("Clock reset acknowledged — game restarted")
         self._white_time_left = new_time_base
         self._black_time_left = new_time_base
         self._time_pub.publish(
@@ -272,10 +285,7 @@ class ClockNode(Node):
         if self._clock_connection is None:
             return
 
-        msg = self.poll_clock()
-        if msg is None:
-            self.get_logger().warn("Could not poll clock")
-            return
+        self.poll_clock()
 
     def handle_message(self, msg):
         """
@@ -283,24 +293,26 @@ class ClockNode(Node):
         """
 
         m = re.search(
-            r"upd w (\d+) b (\d+) t (white|black) p (true|false) a (true|false)", msg.strip()
+            r"upd w (\d+) b (\d+) t (white|black) p (true|false) a (true|false)", msg
         )
         if m:
             self._white_time_left = int(m.group(1))
             self._black_time_left = int(m.group(2))
-            self._paused = m.group(3) == "true"
-            self._active = m.group(4) == "true"
+            self._white_to_play = m.group(3) == "white"
+            self._paused = m.group(4) == "true"
+            self._active = m.group(5) == "true"
             self._time_pub.publish(
                 ChessTime(
                     white_time_left=self._white_time_left,
                     black_time_left=self._black_time_left,
                     paused=self._paused,
                     active=self._active,
+                    white_to_play=self._white_to_play,
                 )
             )
             return
 
-        m = re.search(r"btn w (true|false) b (true|false)", msg.strip())
+        m = re.search(r"btn w (true|false) b (true|false)", msg)
         if m:
             self._white_btn_pressed = m.group(1) == "true"
             self._black_btn_pressed = m.group(2) == "true"
